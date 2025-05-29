@@ -1,34 +1,60 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>URL Field Reader</title>
+  <title>Reference URL Reader</title>
   <script src="https://unpkg.com/@contentstack/ui-extensions-sdk/dist/ui-extension-sdk.js"></script>
   <style>
-    body { font-family: Arial; padding: 10px; }
-    input { width: 100%; padding: 8px; font-size: 14px; }
+    body { font-family: Arial, sans-serif; padding: 10px; }
+    select, input { width: 100%; margin: 8px 0; padding: 6px; font-size: 14px; }
   </style>
 </head>
 <body>
-  <h3>Auto-fetched URL:</h3>
-  <input type="text" id="urlValue" readonly />
+  <label for="entrySelect">Select Reference Entry:</label>
+  <div id="entrySelect"></div>
+
+  <label for="urlField">URL from Reference:</label>
+  <input type="text" id="urlField" readonly />
+
   <script>
-    window.extensionField = null;
-    ContentstackUIExtension.init().then(async (extension) => {
-      extensionField = extension;
-      // Resize height
-      extensionWindow = extension.window;
-      extensionWindow.updateHeight(100);
-      // Get current entry data
-      const entryData = extension.entry;
-      const urlValue = entryData.getData()['url'];
-      // Set value in input field
-      document.getElementById('urlValue').value = urlValue || "URL not set";
-      // Optionally: set the field's own value
-      extensionField.field.setValue(urlValue);
-      // Listen for field updates
-      entryData.onSave(async () => {
-        // Optional logic if needed before save
-      });
+    ContentstackUIExtension.init().then(async (ext) => {
+      const { entry, field, window } = ext;
+      window.updateHeight(120);
+
+      // Dynamic configuration
+      const config = ext.config || {};
+      const contentTypeUid = config.contentTypeUid || 'generic_page';
+      const targetField = config.targetField || 'referenced_url';
+
+      const selectedEntryUID = field.getData();
+
+      const referenceFieldConfig = {
+        multiple: false,
+        types: [contentTypeUid],
+        onChange: async (refEntries) => {
+          if (refEntries.length > 0) {
+            const refEntry = refEntries[0];
+            const refUID = refEntry.uid;
+            field.setData(refUID);
+
+            const urlValue = refEntry.url || "URL not found";
+            document.getElementById('urlField').value = urlValue;
+
+            await entry.setData({ [targetField]: urlValue });
+          }
+        }
+      };
+
+      ext.stack.field(referenceFieldConfig, document.getElementById('entrySelect'));
+
+      if (selectedEntryUID) {
+        try {
+          const refEntry = await ext.stack.getEntry(contentTypeUid, selectedEntryUID);
+          const urlValue = refEntry.url || 'URL not found';
+          document.getElementById('urlField').value = urlValue;
+        } catch (error) {
+          document.getElementById('urlField').value = 'Error loading reference entry.';
+        }
+      }
     });
   </script>
 </body>
