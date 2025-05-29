@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>URL Field Reader</title>
+  <script src="https://unpkg.com/@contentstack/ui-extensions-sdk/dist/ui-extension-sdk.js"></script>
+  <style>
+    body { font-family: Arial; padding: 10px; }
+    input { width: 100%; padding: 8px; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <h3>Auto-fetched URL:</h3>
+  <input type="text" id="urlValue" readonly />
+  <script>
+    window.extensionField = null;
+    ContentstackUIExtension.init().then(async (extension) => {
+      extensionField = extension;
+      // Resize height
+      extensionWindow = extension.window;
+      extensionWindow.updateHeight(100);
+      // Get current entry data
+      const entryData = extension.entry;
+      const urlValue = entryData.getData()['url'];
+      // Set value in input field
+      document.getElementById('urlValue').value = urlValue || "URL not set";
+      // Optionally: set the field's own value
+      extensionField.field.setValue(urlValue);
+      // Listen for field updates
+      entryData.onSave(async () => {
+        // Optional logic if needed before save
+      });
+    });
+  </script>
+</body>
+</html>
