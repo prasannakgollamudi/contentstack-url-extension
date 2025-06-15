@@ -1,53 +1,26 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Resolve URL from Nested Reference</title>
-  <script src="https://unpkg.com/contentstack-ui-extensions-sdk@3.0.0"></script>
+  <title>URL Auto Save Extension</title>
+  <script src="https://cdn.jsdelivr.net/npm/contentstack-ui-extensions-sdk@3.0.0"></script>
 </head>
 <body>
-  <label>Resolved URL:</label>
-  <input type="text" id="resolvedUrl" disabled />
+  <label>Auto-copied URL:</label>
+  <input type="text" id="urlField" disabled />
 
   <script>
     ContentstackUIExtension.init().then(async (extension) => {
-      const locale = extension.locale;
-      const headers = {
-        api_key: extension.config.apiKey,
-        authorization: extension.config.managementToken
-      };
+      const entryData = await extension.entry.getData();
+      const url = entryData.url || '';
 
-      async function fetchEntry(contentType, uid) {
-        const url = `https://azure-eu-api.contentstack.com/v3/content_types/${contentType}/entries/${uid}?locale=${locale}`;
-        const res = await fetch(url, { headers });
-        const data = await res.json();
-        return data.entry;
-      }
+      // Display in input field
+      const input = document.getElementById('urlField');
+      input.value = url;
 
-      async function resolveUrl() {
-        const entry = await extension.entry.getData();
-        const outerRef = entry.link_target;
+      // Auto-save to custom field
+      await extension.field.setData(url);
 
-        if (outerRef?.link_target?.length > 0) {
-          const innerRef = outerRef.link_target[0];
-          const uid = innerRef.uid;
-          const contentType = innerRef._content_type_uid;
-
-          if (contentType === "generic_page") {
-            const finalEntry = await fetchEntry(contentType, uid);
-            const finalUrl = finalEntry.url || '';
-
-            document.getElementById("resolvedUrl").value = finalUrl;
-            await extension.field.setData(finalUrl);
-            return;
-          }
-        }
-
-        document.getElementById("resolvedUrl").value = "No URL found";
-        await extension.field.setData("");
-      }
-
-      extension.entry.onReferenceChange("link_target", resolveUrl);
-      await resolveUrl();
+      extension.window.updateHeight();
     });
   </script>
 </body>
