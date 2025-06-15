@@ -13,7 +13,7 @@
       const locale = extension.locale;
       const headers = {
         api_key: extension.config.apiKey,
-        authorization: extension.config.deliveryToken
+        authorization: extension.config.managementToken
       };
 
       async function fetchEntry(contentType, uid) {
