@@ -1,26 +1,35 @@
+
 <!DOCTYPE html>
 <html>
 <head>
-  <title>URL Auto Save Extension</title>
-  <script src="https://cdn.jsdelivr.net/npm/contentstack-ui-extensions-sdk@3.0.0"></script>
+  <script src="https://unpkg.com/@contentstack/app-sdk@latest/dist/contentstack-app-sdk.umd.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@contentstack/json-rte-serializer@1.0.1/dist/json-rte-serializer.umd.js"></script>
 </head>
 <body>
-  <label>Auto-copied URL:</label>
-  <input type="text" id="urlField" disabled />
+  <h3>Custom RTE Field Extension</h3>
+  <textarea id="html_rte_field" style="width: 100%; height: 150px;"></textarea>
 
   <script>
-    ContentstackUIExtension.init().then(async (extension) => {
-      const entryData = await extension.entry.getData();
-      const url = entryData.url || '';
+    window.addEventListener('DOMContentLoaded', async () => {
+      const app = await contentstackApp.init();
+      const fieldInstance = await app.field; // bound to JSON RTE field
+      const rteFieldUID = 'rich_text_html'; // change to your HTML RTE field UID
 
-      // Display in input field
-      const input = document.getElementById('urlField');
-      input.value = url;
+      const rteValue = await app.entry.getData({ fieldUid: rteFieldUID });
+      const textarea = document.getElementById('html_rte_field');
+      textarea.value = rteValue || '';
 
-      // Auto-save to custom field
-      await extension.field.setData(url);
+      textarea.addEventListener('input', async () => {
+        const updatedValue = textarea.value;
 
-      extension.window.updateHeight();
+        // Convert HTML to JSON RTE format
+        const jsonRTEValue = window.contentstackJsonRteSerializer.htmlToJson(updatedValue);
+
+        // Set data in the JSON RTE field
+        await fieldInstance.setData(jsonRTEValue);
+      });
+
+      setInterval(() => app.entry.save(), 5000); // auto-save every 5s
     });
   </script>
 </body>
